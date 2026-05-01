@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Linking, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 
-const PaymentScreen = ({ navigation }) => {
-    // Simulating the user and their cart for testing purposes
+// Add 'route' to the props next to navigation
+const PaymentScreen = ({ navigation, route }) => {
     const userId = "user_12345";
-    const cartItems = [
-        { id: 1, name: 'Lemon Juice', price: 100, quantity: 2, discount: 0 },
-        { id: 2, name: 'Chicken Burger', price: 200, quantity: 3, discount: 20 }
-    ];
+
+    // Catch the selected items passed from the Cart Checkout button!
+    // If none were passed (for fallback), use an empty array.
+    const cartItems = route.params?.selectedItems || [];
 
     const [paymentMethod, setPaymentMethod] = useState('COD');
     const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ const PaymentScreen = ({ navigation }) => {
             if (paymentMethod === 'CARD' && response.data.url) {
                 Linking.openURL(response.data.url);
             } else if (paymentMethod === 'COD') {
-                navigation.navigate('Success');
+                navigation.navigate('Success', { orderId: response.data.orderId });
             }
 
 

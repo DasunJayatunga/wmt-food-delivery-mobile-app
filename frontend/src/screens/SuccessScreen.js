@@ -1,10 +1,48 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ActivityIndicator, Alert, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
-const SuccessScreen = ({ navigation }) => {
+const SuccessScreen = ({ navigation, route }) => {
+    const orderId = route.params?.orderId;
+    const [downloading, setDownloading] = useState(false);
+
+    const downloadInvoice = async () => {
+        if (!orderId) {
+            Alert.alert("Error", "No Order ID found to generate invoice.");
+            return;
+        }
+
+        setDownloading(true);
+        try {
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+            const fileUrl = `${apiUrl}/api/invoice/download/${orderId}`;
+
+            // --- WEB BROWSER LOGIC ---
+            if (Platform.OS === 'web') {
+                // In Chrome/Web, we simply tell the browser to open the PDF URL
+                window.open(fileUrl, '_blank');
+            }
+            // --- MOBILE DEVICE LOGIC ---
+            else {
+                const fileUri = FileSystem.documentDirectory + `Invoice_${orderId}.pdf`;
+                const downloadResult = await FileSystem.downloadAsync(fileUrl, fileUri);
+
+                if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(downloadResult.uri);
+                } else {
+                    Alert.alert("Success", "Invoice downloaded to app directory.");
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Could not download the invoice.");
+        }
+        setDownloading(false);
+    };
+
     return (
         <View style={styles.container}>
-            {/* Background Image */}
             <ImageBackground
                 source={{ uri: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1000&auto=format&fit=crop' }}
                 style={styles.background}
@@ -16,7 +54,21 @@ const SuccessScreen = ({ navigation }) => {
                     <Text style={styles.title}>Congratulations!</Text>
                     <Text style={styles.subtitle}>Your order has been placed successfully.</Text>
 
-                    {/* Go to Home Button */}
+                    {/* Download Invoice Button */}
+                    {orderId && (
+                        <TouchableOpacity
+                            style={[styles.button, styles.invoiceButton]}
+                            onPress={downloadInvoice}
+                            disabled={downloading}
+                        >
+                            {downloading ? (
+                                <ActivityIndicator color="#ffffff" />
+                            ) : (
+                                <Text style={styles.buttonText}>📄 Download Invoice (PDF)</Text>
+                            )}
+                        </TouchableOpacity>
+                    )}
+
                     <TouchableOpacity
                         style={[styles.button, styles.homeButton]}
                         onPress={() => navigation.navigate('Home')}
@@ -24,7 +76,6 @@ const SuccessScreen = ({ navigation }) => {
                         <Text style={styles.buttonText}>Go to Home Page</Text>
                     </TouchableOpacity>
 
-                    {/* Place Another Order Button */}
                     <TouchableOpacity
                         style={[styles.button, styles.orderButton]}
                         onPress={() => navigation.navigate('Order')}
@@ -76,11 +127,14 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         marginBottom: 15,
-        elevation: 2, // Android shadow
-        shadowColor: '#000', // iOS shadow
+        elevation: 2,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
+    },
+    invoiceButton: {
+        backgroundColor: '#17a2b8',
     },
     homeButton: {
         backgroundColor: '#007bff',

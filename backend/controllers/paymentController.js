@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const Order = require('../models/Order');
 
 const processPayment = async (req, res) => {
     try {
@@ -9,19 +10,31 @@ const processPayment = async (req, res) => {
             return res.status(401).json({ error: "User is not logged in." });
         }
 
+        const customerName = "Dineth Sasmitha";
+        const address = "SLIIT Campus, Malabe, Sri Lanka";
+
         // Secure Backend Calculation: (Price * Qty) - Discount
         let totalAmount = 0;
+        let totalDiscount = 0;
         cartItems.forEach(item => {
             const itemTotal = (item.price * item.quantity) - (item.discount || 0);
             totalAmount += itemTotal;
+            totalDiscount += (item.discount || 0);
         });
 
         // Handle Cash on Delivery (COD)
         if (paymentMethod === 'COD') {
+
+            const newOrder = new Order({
+                userId, customerName, address, items: cartItems,
+                totalAmount, discount: totalDiscount, paymentMethod
+            });
+            await newOrder.save();
             return res.status(200).json({
                 success: true,
                 message: "Order placed successfully with Cash on Delivery.",
-                totalPaid: totalAmount
+                totalPaid: totalAmount,
+                orderId: newOrder._id
             });
         }
 
