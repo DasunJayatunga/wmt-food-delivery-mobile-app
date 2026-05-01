@@ -1,45 +1,41 @@
 const mongoose = require('mongoose');
 
-// Define the schema
 const deliverySchema = new mongoose.Schema(
   {
-    order: {
-      type: mongoose.Schema.Types.ObjectId,   // reference to another document
-      ref: 'Order',                           // the model it refers to
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order',
       required: true
     },
-    driver: {
+    driverId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',                            // assume a User model exists
+      ref: 'User',
       default: null
     },
     status: {
       type: String,
       enum: [
-        'confirmed',            // order confirmed
-        'preparing',            // order being prepared
-        'sent_to_delivery',     // order sent to delivery driver
-        'waiting_for_pickup',   // driver waiting to pick up
-        'on_the_way',           // out for delivery
-        'delivered',            // finished
+        'confirmed',
+        'preparing',
+        'sent_to_delivery',
+        'waiting_for_pickup',
+        'on_the_way',
+        'delivered',
         'cancelled'
       ],
       default: 'confirmed'
     },
-    deliveryAddress: {
-      street: String,
-      city: String,
-      coordinates: [Number]                   // destination coordinates
+    address: {
+      type: String,
+      required: true
     },
-    estimatedTime: {
-      type: String,                           // human‑readable ETA
+    // File upload requirement – keep this field (even if you don’t “track” it)
+    proofImage: {
+      type: String,
       default: null
     }
   },
-  {
-    timestamps: true   // automatically adds createdAt & updatedAt
-  }
+  { timestamps: true }
 );
 
-// Create and export the model
 module.exports = mongoose.model('Delivery', deliverySchema);

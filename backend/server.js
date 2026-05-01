@@ -5,15 +5,13 @@ const connectDB = require('./config/db');
 
 const app = express();
 
-// Connect to MongoDB
 connectDB();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
-// Routes
+// ---------- DELIVERY ROUTES ----------
 app.use('/api/delivery', require('./routes/delivery'));
 
 const PORT = process.env.PORT || 5000;

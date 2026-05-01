@@ -1,8 +1,9 @@
-const Delivery = require('../models/Delivery');     // Import the Delivery model
+const Delivery = require('../models/Delivery');
 
 // ---------- CREATE ----------
 exports.createDelivery = async (req, res) => {
   try {
+    // req.body should contain: orderId, driverId, address, status (optional)
     const delivery = new Delivery(req.body);
     await delivery.save();
     res.status(201).json(delivery);
@@ -15,8 +16,8 @@ exports.createDelivery = async (req, res) => {
 exports.getDelivery = async (req, res) => {
   try {
     const delivery = await Delivery.findById(req.params.id)
-      .populate('order')
-      .populate('driver', 'name');
+      //.populate('orderId')                // was 'order'
+      //.populate('driverId', 'name');      // was 'driver'
     if (!delivery) {
       return res.status(404).json({ error: 'Delivery not found' });
     }
@@ -29,6 +30,7 @@ exports.getDelivery = async (req, res) => {
 // ---------- UPDATE ----------
 exports.updateDelivery = async (req, res) => {
   try {
+    // req.body may contain: status, driverId, address, proofImage, etc.
     const delivery = await Delivery.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
