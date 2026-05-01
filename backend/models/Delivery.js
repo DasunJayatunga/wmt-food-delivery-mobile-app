@@ -15,28 +15,21 @@ const deliverySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'picked_up', 'on_the_way', 'delivered', 'cancelled'],
-      default: 'pending'
-    },
-    currentLocation: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        default: 'Point'
-      },
-      coordinates: {
-        type: [Number],                       // [longitude, latitude]
-        default: [0, 0]
-      }
+      enum: [
+        'confirmed',            // order confirmed
+        'preparing',            // order being prepared
+        'sent_to_delivery',     // order sent to delivery driver
+        'waiting_for_pickup',   // driver waiting to pick up
+        'on_the_way',           // out for delivery
+        'delivered',            // finished
+        'cancelled'
+      ],
+      default: 'confirmed'
     },
     deliveryAddress: {
       street: String,
       city: String,
       coordinates: [Number]                   // destination coordinates
-    },
-    proofImage: {
-      type: String,                           // path or URL to uploaded image
-      default: null
     },
     estimatedTime: {
       type: String,                           // human‑readable ETA
@@ -47,9 +40,6 @@ const deliverySchema = new mongoose.Schema(
     timestamps: true   // automatically adds createdAt & updatedAt
   }
 );
-
-// Geospatial index – enables "near" queries later
-deliverySchema.index({ currentLocation: '2dsphere' });
 
 // Create and export the model
 module.exports = mongoose.model('Delivery', deliverySchema);

@@ -2,28 +2,37 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Button,
-  Image,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
+import { Colors, Fonts, Spacing, CommonStyles } from '../utils/styles';
+
+// Ordered list of statuses to be shown in the timeline
+const STATUS_STEPS = [
+  { key: 'confirmed',         label: 'Order Confirmed' },
+  { key: 'preparing',         label: 'Being Prepared' },
+  { key: 'sent_to_delivery',  label: 'Sent to Delivery' },
+  { key: 'waiting_for_pickup',label: 'Driver Waiting for Pickup' },
+  { key: 'on_the_way',        label: 'On the Way' },
+  { key: 'delivered',         label: 'Delivered' },
+];
 
 const DeliveryTrackingScreen = ({ route }) => {
   const { deliveryId } = route.params;
   const [delivery, setDelivery] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch delivery data
+  // ---------- Fetch delivery status from backend ----------
   const fetchDelivery = async () => {
     try {
       const res = await api.get(`/delivery/${deliveryId}`);
       setDelivery(res.data);
     } catch (err) {
-      Alert.alert('Error', 'Could not load delivery');
+      Alert.alert('Error', 'Could not load delivery status');
     } finally {
       setLoading(false);
     }
@@ -31,13 +40,18 @@ const DeliveryTrackingScreen = ({ route }) => {
 
   useEffect(() => {
     fetchDelivery();
-    // Poll every 10 seconds to simulate real-time tracking
+    // Poll every 10 seconds to get the latest status
     const interval = setInterval(fetchDelivery, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Pick an image and upload as proof of delivery
-  const pickAndUploadProof = async () => {
+  // ---------- Current step index ----------
+  const currentIndex = delivery
+    ? STATUS_STEPS.findIndex(step => step.key === delivery.status)
+    : -1;
+
+  // ---------- Upload proof of delivery (only when delivered) ----------
+  const handleProofUpload = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'We need access to your photos');
@@ -63,65 +77,135 @@ const DeliveryTrackingScreen = ({ route }) => {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         setDelivery(res.data);
-        Alert.alert('Success', 'Proof uploaded! Delivery marked as delivered.');
+        Alert.alert('Success', 'Proof uploaded and delivery marked as delivered');
       } catch (err) {
         Alert.alert('Upload failed', 'Something went wrong');
       }
     }
   };
 
+  // ---------- Loading / Error states ----------
   if (loading) {
-    return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+    return <ActivityIndicator size="large" color={Colors.primary} style={{ flex: 1 }} />;
   }
 
   if (!delivery) {
-    return <Text>Delivery not found</Text>;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.error}>Delivery not found</Text>
+      </View>
+    );
   }
 
-  // Convert MongoDB coordinates [lng, lat] to map {latitude, longitude}
-  const driverLocation = delivery.currentLocation?.coordinates
-    ? {
-        latitude: delivery.currentLocation.coordinates[1],
-        longitude: delivery.currentLocation.coordinates[0],
-      }
-    : null;
-
+  // ---------- Main UI ----------
   return (
-    <View style={styles.container}>
-      <MapView
-        style={styles.map}
-        initialRegion={
-          driverLocation
-            ? { ...driverLocation, latitudeDelta: 0.01, longitudeDelta: 0.01 }
-            : { latitude: 0, longitude: 0, latitudeDelta: 0.01, longitudeDelta: 0.01 }
-        }
-      >
-        {driverLocation && (
-          <Marker coordinate={driverLocation} title="Driver" pinColor="blue" />
-        )}
-      </MapView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Delivery Status</Text>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.status}>Status: {delivery.status}</Text>
-        <Text>ETA: {delivery.estimatedTime || 'Calculating...'}</Text>
-        {delivery.proofImage && (
-          <Image
-            source={{ uri: `http://10.0.2.2:5000/${delivery.proofImage}` }}
-            style={styles.proofImage}
+      {/* Status timeline */}
+      {STATUS_STEPS.map((step, index) => {
+        const isCompleted = index <= currentIndex && delivery.status !== 'cancelled';
+        const isCurrent = index === currentIndex;
+        const isCancelled = delivery.status === 'cancelled' && isCurrent;
+
+        return (
+          <View key={step.key} style={styles.stepRow}>
+            {/* Circle indicator */}
+            <View style={[styles.circle, isCompleted && styles.circleCompleted]}>
+              {isCompleted && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+
+            {/* Label and badges */}
+            <View style={styles.stepTextContainer}>
+              <Text style={[styles.stepLabel, (isCompleted || isCurrent) && styles.completedLabel]}>
+                {step.label}
+              </Text>
+              {isCurrent && !isCancelled && (
+                <View style={styles.currentBadge}>
+                  <Text style={styles.badgeText}>Current</Text>
+                </View>
+              )}
+              {isCancelled && (
+                <View style={styles.cancelledBadge}>
+                  <Text style={styles.badgeText}>Cancelled</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      })}
+
+      {/* Proof upload section (only when delivered) */}
+      {delivery.status === 'delivered' && (
+        <View style={styles.uploadSection}>
+          <Button
+            title="Upload Proof of Delivery"
+            onPress={handleProofUpload}
+            color={Colors.primary}
           />
-        )}
-        <Button title="Upload Proof of Delivery" onPress={pickAndUploadProof} />
-      </View>
-    </View>
+        </View>
+      )}
+    </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  infoCard: { padding: 16, backgroundColor: 'white' },
-  status: { fontSize: 18, fontWeight: 'bold' },
-  proofImage: { width: 100, height: 100, marginVertical: 8 },
-});
+// ---------- Styles (merged with shared theme) ----------
+const styles = {
+  container: {
+    ...CommonStyles.screenContainer,
+  },
+  title: {
+    ...CommonStyles.pageTitle,
+  },
+  stepRow: {
+    ...CommonStyles.statusRow,
+  },
+  circle: {
+    ...CommonStyles.statusCircle,
+  },
+  circleCompleted: {
+    ...CommonStyles.statusCircleCompleted,
+  },
+  checkmark: {
+    color: Colors.white,
+    fontWeight: 'bold',
+  },
+  stepTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  stepLabel: {
+    ...CommonStyles.statusLabel,
+  },
+  completedLabel: {
+    fontWeight: 'bold',
+    color: Colors.textDark,
+  },
+  currentBadge: {
+    ...CommonStyles.badge,
+    backgroundColor: Colors.primary,
+  },
+  cancelledBadge: {
+    ...CommonStyles.badge,
+    backgroundColor: Colors.danger,
+  },
+  badgeText: {
+    ...CommonStyles.badgeText,
+  },
+  uploadSection: {
+    marginTop: Spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: '#eeeeee',
+    paddingTop: Spacing.md,
+  },
+  error: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: Fonts.sizes.large,
+    color: Colors.danger,
+  },
+};
 
 export default DeliveryTrackingScreen;
