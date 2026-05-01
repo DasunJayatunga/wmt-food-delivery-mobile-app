@@ -1,4 +1,4 @@
-const Delivery = require('../models/Delivery');
+const Delivery = require('../models/Delivery');     // Import the Delivery model
 
 // ---------- CREATE ----------
 exports.createDelivery = async (req, res) => {
