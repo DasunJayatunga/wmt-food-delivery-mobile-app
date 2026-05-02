@@ -6,6 +6,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../services/api';
@@ -13,13 +14,16 @@ import { Colors, Fonts, Spacing, CommonStyles } from '../utils/styles';
 
 // Ordered list of statuses to be shown in the timeline
 const STATUS_STEPS = [
-  { key: 'confirmed',         label: 'Order Confirmed' },
-  { key: 'preparing',         label: 'Being Prepared' },
-  { key: 'sent_to_delivery',  label: 'Sent to Delivery' },
-  { key: 'waiting_for_pickup',label: 'Driver Waiting for Pickup' },
-  { key: 'on_the_way',        label: 'On the Way' },
-  { key: 'delivered',         label: 'Delivered' },
+  { key: 'confirmed',          label: 'Order Confirmed' },
+  { key: 'preparing',          label: 'Being Prepared' },
+  { key: 'sent_to_delivery',   label: 'Sent to Delivery' },
+  { key: 'waiting_for_pickup', label: 'Driver Waiting for Pickup' },
+  { key: 'on_the_way',         label: 'On the Way' },
+  { key: 'delivered',          label: 'Delivered' },
 ];
+
+// Base URL for static files (uploads) – same as api base but without '/api'
+const BASE_URL = 'https://food-delivery-api-trj7.onrender.com';
 
 const DeliveryTrackingScreen = ({ route }) => {
   const { deliveryId } = route.params;
@@ -32,7 +36,6 @@ const DeliveryTrackingScreen = ({ route }) => {
       const res = await api.get(`/delivery/${deliveryId}`);
       setDelivery(res.data);
     } catch (err) {
-      console.log('FETCH ERROR:', err);          // add this line
       Alert.alert('Error', 'Could not load delivery status');
     } finally {
       setLoading(false);
@@ -145,6 +148,13 @@ const DeliveryTrackingScreen = ({ route }) => {
             onPress={handleProofUpload}
             color={Colors.primary}
           />
+          {delivery.proofImage && (
+            <Image
+              source={{ uri: `${BASE_URL}/${delivery.proofImage}` }}
+              style={styles.proofImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
       )}
     </ScrollView>
@@ -201,6 +211,13 @@ const styles = {
     borderTopWidth: 1,
     borderTopColor: '#eeeeee',
     paddingTop: Spacing.md,
+  },
+  proofImage: {
+    width: '100%',
+    height: 200,
+    marginTop: Spacing.md,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   error: {
     textAlign: 'center',
