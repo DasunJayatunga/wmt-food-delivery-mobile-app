@@ -17,7 +17,7 @@ const {
 // Route Definitions
 router.post('/', auth, createDelivery);                            // Create a delivery
 router.get('/:id', auth, getDelivery);                             // Get one delivery by ID
-router.put('/:id',*auth, updateDelivery);                          // Update delivery fields
+router.put('/:id', auth, updateDelivery);                          // Update delivery fields
 router.delete('/:id', auth, deleteDelivery);                       // Cancel / delete delivery
 router.put('/:id/proof', auth, upload.single('proof'), uploadProof); // Upload proof image
 
