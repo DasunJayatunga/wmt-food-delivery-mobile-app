@@ -32,6 +32,7 @@ const DeliveryTrackingScreen = ({ route }) => {
       const res = await api.get(`/delivery/${deliveryId}`);
       setDelivery(res.data);
     } catch (err) {
+      console.log('FETCH ERROR:', err);          // add this line
       Alert.alert('Error', 'Could not load delivery status');
     } finally {
       setLoading(false);
@@ -79,7 +80,8 @@ const DeliveryTrackingScreen = ({ route }) => {
         setDelivery(res.data);
         Alert.alert('Success', 'Proof uploaded and delivery marked as delivered');
       } catch (err) {
-        Alert.alert('Upload failed', 'Something went wrong');
+        const message = err.response?.data?.error || err.message || 'Unknown error';
+        Alert.alert('Upload failed', message);
       }
     }
   };

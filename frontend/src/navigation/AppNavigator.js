@@ -12,7 +12,7 @@ const AppNavigator = () => {
         <Stack.Screen
           name="DeliveryTracking"
           component={DeliveryTrackingScreen}
-          initialParams={{ deliveryId: 'PASTE_YOUR_DELIVERY_ID_HERE' }}
+          initialParams={{ deliveryId: '69f5bf380d546ea90bc17406' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

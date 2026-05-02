@@ -5,7 +5,7 @@ const api = axios.create({
   // Android emulator: 10.0.2.2 maps to host localhost
   // iOS simulator: use localhost
   // Real device (same WiFi): use your computer's IP, e.g. 192.168.1.5
-  baseURL: 'http://10.0.2.2:5000/api',
+  baseURL: 'http://192.168.1.13:5000/api',
 });
 
 // Automatically attach JWT token to every request
